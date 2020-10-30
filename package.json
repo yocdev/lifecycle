@@ -25,7 +25,7 @@
   },
   "homepage": "https://github.com/yocdev/lifecycle#readme",
   "dependencies": {
-    "@yocdev/http-terminator": "^2.0.3",
+    "@yocdev/http-terminator": "^2.0.3-yoc.1",
     "@yocdev/timer-manager": "^1.1.0"
   },
   "devDependencies": {

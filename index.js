@@ -2,7 +2,7 @@
 // when TimerManager package required. So require lifecycle package
 // as early as possible to trace all the timer function invokes.
 const TimerManager = require('@yocdev/timer-manager')
-const { createHttpTerminator } = require('http-terminator')
+const { createHttpTerminator } = require('@yocdev/http-terminator')
 
 
 // eslint-disable-next-line no-empty-function

@@ -1,0 +1,35 @@
+{
+  "name": "@yocdev/lifecycle",
+  "version": "1.0.0",
+  "description": "Readiness, liveness, gracefully shutdown helpers for server app.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yocdev/lifecycle.git"
+  },
+  "keywords": [
+    "readiness",
+    "liveness",
+    "gracefully",
+    "shutdown",
+    "k8s",
+    "docker"
+  ],
+  "author": "npm@youchai.me",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yocdev/lifecycle/issues"
+  },
+  "homepage": "https://github.com/yocdev/lifecycle#readme",
+  "dependencies": {
+    "@yocdev/timer-manager": "^1.1.0",
+    "http-terminator": "^2.0.3"
+  },
+  "devDependencies": {
+    "@yocdev/eslint-config-node": "^1.0.0",
+    "eslint": "^7.12.1"
+  }
+}

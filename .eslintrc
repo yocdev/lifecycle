@@ -1,0 +1,3 @@
+{
+  "extends": "@yocdev/eslint-config-node"
+}

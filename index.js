@@ -89,6 +89,9 @@ class Lifecycle {
   }
 
   static isReady() {
+    if (LifecycleStatics.dependencies.length === 0) {
+      return true
+    }
     return LifecycleStatics.dependencies.every(dependency => dependency.isReady())
   }
 

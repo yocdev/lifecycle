@@ -25,8 +25,8 @@
   },
   "homepage": "https://github.com/yocdev/lifecycle#readme",
   "dependencies": {
-    "@yocdev/timer-manager": "^1.1.0",
-    "http-terminator": "^2.0.3"
+    "@yocdev/http-terminator": "^2.0.3",
+    "@yocdev/timer-manager": "^1.1.0"
   },
   "devDependencies": {
     "@yocdev/eslint-config-node": "^1.0.0",

@@ -77,6 +77,9 @@ class Lifecycle {
       LifecycleStatics.dependencyMap.set(dependencyName, dependency)
       LifecycleStatics.dependencies.push(dependency)
     })
+    LifecycleStatics.logger.info(
+      `[Dependencies] ${dependencyNames.length} created (${dependencyNames.join(', ')}).`,
+    )
     return LifecycleStatics.dependencies
   }
 
@@ -151,15 +154,25 @@ class Lifecycle {
   }
 
   static attach() {
-    const logger = LifecycleStatics.logger
-    LifecycleStatics.shutdownConfig.signals.forEach(signal => process.on(signal, async () => {
-      if (LifecycleStatics.shuttingDown) {
+    const statics = LifecycleStatics
+    const logger = statics.logger
+    const dependencyCount = statics.dependencies.length
+    const dependencyNamesText = statics
+      .dependencies
+      .map(dependency => dependency.name)
+      .join(', ')
+    const dependencyDetailText = dependencyCount === 0
+      ? '0 dependencies'
+      : `${dependencyCount} dependencies (${dependencyNamesText})`
+
+    statics.shutdownConfig.signals.forEach(signal => process.on(signal, async () => {
+      if (statics.shuttingDown) {
         logger.warn(`[Signal:${signal}] Already shutting down. Skipped.`)
         return
       }
 
-      LifecycleStatics.shuttingDown = true
-      const config = LifecycleStatics.shutdownConfig
+      statics.shuttingDown = true
+      const config = statics.shutdownConfig
 
       // Delay if needed.
       if (config.delay) {
@@ -169,45 +182,58 @@ class Lifecycle {
 
       // Main component termination.
       try {
-        logger.info('[MainComponent] Shutting down...')
-        if (LifecycleStatics.httpTerminator) {
-          await LifecycleStatics.httpTerminator.terminate()
+        if (statics.httpTerminator) {
+          logger.info('[MainComponent] Shutting down HTTP(s) server...')
+          await statics.httpTerminator.terminate()
+          logger.info('[MainComponent] Shut down.')
         } else if (config.onMainComponentShutdown) {
+          logger.info('[MainComponent] Shutting down main component (non HTTP(s) server)...')
           await config.onMainComponentShutdown()
+          logger.info('[MainComponent] Shut down.')
+        } else {
+          logger.info('[MainComponent] None for shutting down. Skipped.')
         }
-        logger.info('[MainComponent] Shut down.')
       } catch (error) {
         logger.warn('[MainComponent] Error shutting down:', error)
       }
 
       // Dependencies termination.
-      logger.info('[Dependencies] Shutting down...')
-      let timer
-      if (config.dependenciesShutdownTimeout) {
-        timer = setTimeout(() => {
-          logger.warn(
-            '[Dependencies] Timed out shutting down in',
-            `${config.dependenciesShutdownTimeout}ms. Forcibly exit.`,
-          )
-          process.exit(1)
-        }, config.dependenciesShutdownTimeout)
-      }
-      await Promise.all(LifecycleStatics.dependencies.map(dependency => {
-        const result = dependency.shutdown()
-        if (result.catch) {
-          return result.catch(error => {
-            logger.warn(`[Dependency:${dependency.name}] Error shutting down:`, error)
-          })
+      if (statics.dependencies.length === 0) {
+        logger.info('[Dependencies] None for shutting down. Skipped.')
+      } else {
+        logger.info(`[Dependencies] Shutting down ${dependencyDetailText}...`)
+        let timer
+        if (config.dependenciesShutdownTimeout) {
+          timer = setTimeout(() => {
+            logger.warn(
+              '[Dependencies] Timed out shutting down in',
+              `${config.dependenciesShutdownTimeout}ms. Forcibly exit.`,
+            )
+            process.exit(1)
+          }, config.dependenciesShutdownTimeout)
         }
-        return result
-      }))
-      if (timer) {
-        clearTimeout(timer)
+        await Promise.all(statics.dependencies.map(dependency => {
+          const result = dependency.shutdown()
+          if (result.catch) {
+            return result.catch(error => {
+              logger.warn(`[Dependency:${dependency.name}] Error shutting down:`, error)
+            })
+          }
+          return result
+        }))
+        if (timer) {
+          clearTimeout(timer)
+        }
+        logger.info('[Dependencies] All shut down.')
       }
-      logger.info('[Dependencies] All shut down.')
 
       // Clear all timers.
-      logger.info('[Timers] Clearing...')
+      const timeoutCount = TimerManager.getTimeoutTimerSet().size
+      const intervalCount = TimerManager.getIntervalTimerSet().size
+      logger.info(
+        '[Timers] Clearing timers',
+        `(${timeoutCount} timeout type, ${intervalCount} interval type)...`,
+      )
       TimerManager.clearAll()
       logger.info('[Timers] All cleared.')
 
@@ -220,6 +246,22 @@ class Lifecycle {
         process.exit(1)
       }, 1000).unref()
     }))
+
+    const httpMainComponentCount = statics.httpTerminator ? 1 : 0
+    const nonHttpMainComponentCount = (
+      !statics.httpTerminator &&
+      statics.shutdownConfig.onMainComponentShutdown
+    )
+      ? 1
+      : 0
+    const mainComponentCount = httpMainComponentCount + nonHttpMainComponentCount
+    logger.info(
+      'Attached.',
+      `${dependencyDetailText}.`,
+      `${mainComponentCount} main components`,
+      `(${httpMainComponentCount} HTTP(s) servers,`,
+      `${nonHttpMainComponentCount} non HTTP(s) servers).`,
+    )
   }
 }
 

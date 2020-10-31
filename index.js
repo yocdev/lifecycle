@@ -31,7 +31,7 @@ class Dependency {
   setReady() {
     this._ready = true
     if (typeof this._onReady === 'function') {
-      this._onReady()
+      setImmediate(this._onReady.bind(this))
     }
   }
 
@@ -63,7 +63,7 @@ const LifecycleStatics = {
   callReady() {
     this.logger.info('Ready.')
     if (typeof this.onReady === 'function') {
-      this.onReady()
+      setImmediate(this.onReady.bind(this))
     }
   },
   alive: undefined,

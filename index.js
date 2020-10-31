@@ -16,6 +16,7 @@ class Dependency {
   constructor(name) {
     this._name = name
     this._ready = false
+    this._onReady = undefined
     this._onShutdown = undefined
   }
 
@@ -29,6 +30,13 @@ class Dependency {
 
   setReady() {
     this._ready = true
+    if (typeof this._onReady === 'function') {
+      this._onReady()
+    }
+  }
+
+  onReady(callback) {
+    this._onReady = callback
   }
 
   onShutdown(callback) {
@@ -51,9 +59,17 @@ const lifecycleShutdownConfigDefaults = {
 
 const LifecycleStatics = {
   logger: { info: NOOP, warn: NOOP, error: NOOP },
+  onReady: undefined,
+  callReady() {
+    this.logger.info('Ready.')
+    if (typeof this.onReady === 'function') {
+      this.onReady()
+    }
+  },
   alive: undefined,
   dependencyMap: new Map(),
   dependencies: [],
+  dependenciesCreated: false,
   httpTerminator: null,
   shuttingDown: false,
   shutdownConfig: lifecycleShutdownConfigDefaults,
@@ -71,9 +87,35 @@ class Lifecycle {
     LifecycleStatics.logger = logger
   }
 
+  /**
+   * Create dependencies.
+   * Even if your App has no dependencies, you should call this method to
+   * let the `Lifecycle.onReady()` be called correctly.
+   * Just call `Lifecycle.createDependencies()` if no dependencies needed.
+   *
+   * @param {(string[]|null|undefined)} dependencyNames
+   */
   static createDependencies(dependencyNames) {
+    if (LifecycleStatics.dependenciesCreated) {
+      throw new Error('Dependencies have created.')
+    }
+    LifecycleStatics.dependenciesCreated = true
+
+    if (!Array.isArray(dependencyNames) || dependencyNames.length === 0) {
+      LifecycleStatics.logger.info('[Dependencies] No dependencies for this Lifecycle.')
+      LifecycleStatics.callReady()
+      return []
+    }
+
+    let readyCount = 0
     dependencyNames.forEach(dependencyName => {
       const dependency = new Dependency(dependencyName)
+      dependency.onReady(() => {
+        readyCount += 1
+        if (readyCount === dependencyNames.length) {
+          LifecycleStatics.callReady()
+        }
+      })
       LifecycleStatics.dependencyMap.set(dependencyName, dependency)
       LifecycleStatics.dependencies.push(dependency)
     })
@@ -96,6 +138,10 @@ class Lifecycle {
       return true
     }
     return LifecycleStatics.dependencies.every(dependency => dependency.isReady())
+  }
+
+  static onReady(callback) {
+    LifecycleStatics.onReady = callback
   }
 
   /**

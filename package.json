@@ -1,6 +1,6 @@
 {
   "name": "@yocdev/lifecycle",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Readiness, liveness, gracefully shutdown helpers for server app.",
   "main": "index.js",
   "scripts": {

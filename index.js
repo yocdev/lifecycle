@@ -90,23 +90,21 @@ class Lifecycle {
 
   /**
    * Create dependencies.
-   * Even if your App has no dependencies, you should call this method to
-   * let the `Lifecycle.onReady()` be called correctly.
-   * Just call `Lifecycle.createDependencies()` if no dependencies needed.
    *
    * @param {(string[]|null|undefined)} dependencyNames
    */
   static createDependencies(dependencyNames) {
+    if (!Array.isArray(dependencyNames) || dependencyNames.length === 0) {
+      throw new Error(
+        'createDependencies(dependencyNames) - ' +
+        '`dependencyNames` should be a non-empty array.',
+      )
+    }
+
     if (LifecycleStatics.dependenciesCreated) {
       throw new Error('Dependencies have created.')
     }
     LifecycleStatics.dependenciesCreated = true
-
-    if (!Array.isArray(dependencyNames) || dependencyNames.length === 0) {
-      LifecycleStatics.logger.info('[Dependencies] No dependencies for this Lifecycle.')
-      LifecycleStatics.callReady()
-      return []
-    }
 
     let readyCount = 0
     dependencyNames.forEach(dependencyName => {
@@ -124,6 +122,15 @@ class Lifecycle {
       `[Dependencies] ${dependencyNames.length} created (${dependencyNames.join(', ')}).`,
     )
     return LifecycleStatics.dependencies
+  }
+
+  /**
+   * Even if your App has no dependencies, you should call this method to
+   * let the `Lifecycle.onReady()` be triggered correctly.
+   */
+  static markNoDependencies() {
+    LifecycleStatics.logger.info('[Dependencies] No dependencies for this Lifecycle.')
+    LifecycleStatics.callReady()
   }
 
   static getDependency(dependencyName) {

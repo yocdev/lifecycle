@@ -29,6 +29,7 @@ class Dependency {
   }
 
   setReady() {
+    if (this._ready) { return }
     this._ready = true
     if (typeof this._onReady === 'function') {
       setImmediate(this._onReady.bind(this))

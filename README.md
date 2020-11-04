@@ -26,7 +26,7 @@ Lifecycle.onReady(startApp)
 
 
 // --- Create dependencies
-// Lifecycle uses dependencies to manage App start and shutdown processes:
+// Lifecycle uses dependencies to manage App startup and shutdown processes:
 // Lifecycle will become ready when all dependencies are ready and
 // will shutdown all dependencies when App is going to terminate.
 
@@ -100,6 +100,51 @@ app.get('/readiness', (req, res) => {
 app.get('/liveness', (req, res) => {
   res.sendStatus(Lifecycle.isAlive() ? 200 : 503)
 })
+```
+
+### Kubernetes readiness, liveness config example
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      # > (delay + serverGracefullyShutdownTimeout + dependenciesShutdownTimeout) ms
+      terminationGracePeriodSeconds: 50
+      containers:
+      - name: web
+        image: YOURAPPIMAGE
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 80
+          # App startup time
+          initialDelaySeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /liveness
+            port: 80
+          # App startup time
+          initialDelaySeconds: 10
 ```
 
 
